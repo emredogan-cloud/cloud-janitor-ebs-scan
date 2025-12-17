@@ -2,7 +2,7 @@
 > **Serverless AWS cost visibility automation using Terraform**
 
 ![Cloud Janitor Architecture](docs/architecture.png)
-*(Note: Please ensure the architecture diagram is placed in `docs/architecture.png`)*
+*(Note: Please ensure the architecture diagram is placed in `docs/architecture.png`,`docs/architecture2.png`,`docs/architecture3.png` )*
 
 ---
 
