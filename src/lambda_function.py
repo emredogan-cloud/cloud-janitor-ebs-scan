@@ -53,11 +53,26 @@ def send_to_discord(message: str):
 
 def get_regions():
     """
-    Reads regions from environment variable.
-    Example:
-    REGIONS=us-east-1,eu-central-1
+    Ortam değişkenini okur.
+    Eğer 'ALL' yazıyorsa AWS API'sinden tüm aktif bölgeleri çeker.
+    Değilse virgülle ayrılmış listeyi kullanır.
     """
     regions_env = os.environ.get("REGIONS", "us-east-1")
+
+    # Eğer "ALL" ise dinamik olarak listeyi çek
+    if regions_env.upper() == "ALL":
+        try:
+            # DescribeRegions çağrısı için herhangi bir region (us-east-1) üzerinden client açıyoruz
+            ec2_client = boto3.client('ec2', region_name='us-east-1')
+            response = ec2_client.describe_regions()
+            
+            # Sadece bölge isimlerini (RegionName) alıp liste yapıyoruz
+            return [r['RegionName'] for r in response['Regions']]
+        except Exception as e:
+            print(f"Bölge listesi çekilemedi, varsayılan us-east-1 kullanılıyor: {e}")
+            return ["us-east-1"]
+
+    # "ALL" değilse eski usul devam et
     return [r.strip() for r in regions_env.split(",") if r.strip()]
 
 
