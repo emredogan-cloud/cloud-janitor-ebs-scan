@@ -23,7 +23,7 @@ resource "aws_lambda_function" "lambda_func" {
   filename         = data.archive_file.lambda_zip.output_path
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
 
-  timeout     = 60
+  timeout     = 300
   memory_size = 512
 
   environment {
