@@ -1,10 +1,6 @@
 # 📉 Cloud Janitor – Orphan EBS Scanner
 > **Serverless AWS cost visibility automation using Terraform**
 
-<<<<<<< HEAD
-![Cloud Janitor Architecture](docs/architecture.png)
-*(Note: Please ensure the architecture diagram is placed in `docs/architecture.png`,`docs/architecture2.png`,`docs/architecture3.png` )*
-=======
 ![Cloud Janitor Architecture](docs/architecture2.png)
 >>>>>>> cc40511 (docs: improve README with architecture overview and deployment details)
 
