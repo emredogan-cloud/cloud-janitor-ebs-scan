@@ -1,8 +1,4 @@
-############################################
-# Lambda execution role
-# - Trust policy allows AWS Lambda service to assume this role.
-# - Permissions are attached via managed policies below.
-############################################
+
 resource "aws_iam_role" "lambda_role" {
   name = "cloud-janitor-lambda-role"
 
@@ -16,10 +12,7 @@ resource "aws_iam_role" "lambda_role" {
   })
 }
 
-############################################
-# CloudWatch Logs permissions (write)
-# Lambda needs to create log streams and push log events.
-############################################
+
 resource "aws_iam_policy" "cloudwatch_logs_write" {
   name        = "cloud-janitor-logs-write"
   description = "Allow Lambda to write logs to CloudWatch Logs."
@@ -39,10 +32,7 @@ resource "aws_iam_policy" "cloudwatch_logs_write" {
   })
 }
 
-############################################
-# EC2 describe permissions (least privilege)
-# Used to scan for orphaned EBS volumes across regions.
-############################################
+
 resource "aws_iam_policy" "ec2_describe_volumes" {
   name        = "cloud-janitor-ec2-describe"
   description = "Allow describing EBS volumes (and regions) for orphan scan."
@@ -61,9 +51,6 @@ resource "aws_iam_policy" "ec2_describe_volumes" {
   })
 }
 
-############################################
-# Attach policies to the Lambda execution role
-############################################
 resource "aws_iam_role_policy_attachment" "attach_logs" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = aws_iam_policy.cloudwatch_logs_write.arn
