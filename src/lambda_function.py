@@ -5,10 +5,8 @@ from botocore.exceptions import ClientError
 from datetime import datetime
 import urllib3
 
-# HTTP client (Lambda-friendly)
 http = urllib3.PoolManager()
 
-# EBS price table (USD / GB-month)
 EBS_PRICES = {
     "gp3": 0.08,
     "gp2": 0.10,
@@ -29,50 +27,36 @@ def estimate_monthly_cost(volume):
 
 def send_to_discord(message: str):
     webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
+    if not webhook_url: return
 
-    if not webhook_url:
-        raise Exception("DISCORD_WEBHOOK_URL environment variable bulunamadı")
+    chunks = [message[i:i+1900] for i in range(0, len(message), 1900)]
 
-    payload = {
-        "content": message,
-        "username": "Cloud Janitor"
-    }
+    for chunk in chunks:
+        payload = {"content": chunk, "username": "Cloud Janitor"}
+        response = http.request(
+            "POST",
+            webhook_url,
+            body=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"}
+        )
 
-    encoded_body = json.dumps(payload).encode("utf-8")
-
-    response = http.request(
-        "POST",
-        webhook_url,
-        body=encoded_body,
-        headers={"Content-Type": "application/json"}
-    )
-
-    if response.status >= 300:
-        raise Exception(f"Discord webhook hatası: {response.status}")
+        if response.status >= 300:
+            raise Exception(f"Discord webhook Error: {response.status}")
 
 
 def get_regions():
-    """
-    Ortam değişkenini okur.
-    Eğer 'ALL' yazıyorsa AWS API'sinden tüm aktif bölgeleri çeker.
-    Değilse virgülle ayrılmış listeyi kullanır.
-    """
     regions_env = os.environ.get("REGIONS", "us-east-1")
 
-    # Eğer "ALL" ise dinamik olarak listeyi çek
     if regions_env.upper() == "ALL":
         try:
-            # DescribeRegions çağrısı için herhangi bir region (us-east-1) üzerinden client açıyoruz
             ec2_client = boto3.client('ec2', region_name='us-east-1')
             response = ec2_client.describe_regions()
             
-            # Sadece bölge isimlerini (RegionName) alıp liste yapıyoruz
             return [r['RegionName'] for r in response['Regions']]
         except Exception as e:
-            print(f"Bölge listesi çekilemedi, varsayılan us-east-1 kullanılıyor: {e}")
+            print(f"The region list could not be retrieved; the default us-east-1 is being used.: {e}")
             return ["us-east-1"]
 
-    # "ALL" değilse eski usul devam et
     return [r.strip() for r in regions_env.split(",") if r.strip()]
 
 
@@ -92,20 +76,19 @@ def lambda_handler(event, context):
                     vol["Region"] = region
                     all_orphan_volumes.append(vol)
 
-        # No orphan volumes
         if not all_orphan_volumes:
             send_to_discord(
-                "✅ **Cloud Janitor Raporu**\n"
-                "Tüm region’lar temiz. Sahipsiz EBS diski yok."
+                " **Cloud Janitor Report**\n"
+                "All Regions are Clear. No available EBS volumes."
             )
             return {"status": "clean"}
 
         total_monthly_cost = 0.0
 
         lines = [
-            "🚨 **Cloud Janitor Uyarısı: Sahipsiz EBS Diskleri Bulundu!** 🚨",
-            f"Taranan region sayısı: **{len(regions)}**",
-            f"Toplam disk sayısı: **{len(all_orphan_volumes)}**\n"
+            " **Cloud Janitor Report: Unclaimed EBS Volumes detected.!** ",
+            f"Number of regions scanned: **{len(regions)}**",
+            f"Total number of disks: **{len(all_orphan_volumes)}**\n"
         ]
 
         for vol in all_orphan_volumes:
@@ -122,7 +105,7 @@ def lambda_handler(event, context):
             )
 
         lines.append(
-            f"\n💸 **Tahmini toplam aylık maliyet:** **${round(total_monthly_cost, 2)}**"
+            f"\n💸 **Estimated total monthly cost:** **${round(total_monthly_cost, 2)}**"
         )
 
         send_to_discord("\n".join(lines))
@@ -134,4 +117,4 @@ def lambda_handler(event, context):
         }
 
     except ClientError as e:
-        raise Exception(f"AWS API hatası: {str(e)}")
+        raise Exception(f"AWS API ERROR: {str(e)}")
