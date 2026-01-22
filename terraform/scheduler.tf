@@ -1,7 +1,4 @@
-############################################
-# Scheduler IAM role
-# EventBridge Scheduler assumes this role to invoke the Lambda function.
-############################################
+
 resource "aws_iam_role" "scheduler_role" {
   name = "cloud-janitor-scheduler-role"
 
@@ -15,9 +12,7 @@ resource "aws_iam_role" "scheduler_role" {
   })
 }
 
-############################################
-# Scheduler permissions: invoke ONLY the target Lambda function.
-############################################
+
 resource "aws_iam_policy" "scheduler_policy" {
   name        = "cloud-janitor-scheduler-invoke"
   description = "Allow EventBridge Scheduler to invoke the Cloud Janitor Lambda function."
@@ -37,10 +32,6 @@ resource "aws_iam_role_policy_attachment" "scheduler_attach" {
   policy_arn = aws_iam_policy.scheduler_policy.arn
 }
 
-############################################
-# EventBridge Scheduler schedule
-# Runs daily at 09:00 in Europe/Istanbul.
-############################################
 resource "aws_scheduler_schedule" "daily_scan" {
   name        = "cloud-janitor-daily-scan"
   description = "Daily orphan EBS scan with Discord reporting."
@@ -59,11 +50,7 @@ resource "aws_scheduler_schedule" "daily_scan" {
   }
 
   depends_on = [aws_iam_role_policy_attachment.scheduler_attach]
-}
 
-############################################
-# Explicit permission for Scheduler service to invoke Lambda (defensive / avoids surprises)
-############################################
 resource "aws_lambda_permission" "allow_scheduler" {
   statement_id  = "AllowEventBridgeSchedulerInvoke"
   action        = "lambda:InvokeFunction"
