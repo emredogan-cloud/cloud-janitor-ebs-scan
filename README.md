@@ -1,7 +1,8 @@
 # 📉 Cloud Janitor – Orphan EBS Scanner
 > **Serverless AWS cost visibility automation using Terraform**
 
-![CI Status](https://github.com/emredogan-cloud/cloud-janitor-ebs-scan/actions/workflows/ci.yml/badge.svg)
+[![cloud-janitor-ebs-scan CI](https://github.com/emredogan-cloud/cloud-janitor-ebs-scan/actions/workflows/main.yaml/badge.svg)](https://github.com/emredogan-cloud/cloud-janitor-ebs-scan/actions/workflows/main.yaml)
+
 
 ![Cloud Janitor Architecture](docs/architecture2.png)
 >>>>>>> cc40511 (docs: improve README with architecture overview and deployment details)
