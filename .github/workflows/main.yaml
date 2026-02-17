@@ -8,12 +8,17 @@ on:
 
 jobs:
   python-quality:
-    name:  Python Lint & Security
+    name: 🐍 Python Lint & Security
     runs-on: ubuntu-latest
+    permissions:
+      contents: write 
+      
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }} 
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@v4
         with:
           python-version: "3.12" 
@@ -24,8 +29,14 @@ jobs:
           pip install flake8 bandit black
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Check Code Formatting (Black)
-        run: black --check .
+      - name: Format Code with Black
+        run: black . 
+
+      - name: Commit & Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: auto-format python code with black 🤖"
+          branch: ${{ github.head_ref }}
 
       - name: Lint with Flake8
         run: flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -34,7 +45,7 @@ jobs:
         run: bandit -r src/ -f custom 
 
   infra-quality:
-    name:  Docker &  Terraform Check
+    name: 🐳 Docker & ☁️ Terraform Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -55,6 +66,6 @@ jobs:
       - name: Terraform Validate
         id: validate
         run: |
-          terraform init -backend=false # Backend'e bağlanmadan init yap
+          terraform init -backend=false
           terraform validate
         working-directory: ./terraform

@@ -1,103 +1,135 @@
-# 📉 Cloud Janitor – Orphan EBS Scanner
-> **Serverless AWS cost visibility automation using Terraform**
+# 📉 Cloud Janitor – Containerized EBS Scanner  
+> **Serverless AWS cost visibility automation using Terraform & Docker**
 
-[![cloud-janitor-ebs-scan CI](https://github.com/emredogan-cloud/cloud-janitor-ebs-scan/actions/workflows/main.yaml/badge.svg)](https://github.com/emredogan-cloud/cloud-janitor-ebs-scan/actions/workflows/main.yaml)
+[![Cloud Janitor CI](https://github.com/emredogan-cloud/cloud-janitor-ebs-scan/actions/workflows/main.yaml/badge.svg)](https://github.com/emredogan-cloud/cloud-janitor-ebs-scan/actions/workflows/main.yaml)
 
-
-![Cloud Janitor Architecture](docs/architecture2.png)
->>>>>>> cc40511 (docs: improve README with architecture overview and deployment details)
+![Cloud Janitor Architecture](docs/cloud-janitor.png)
 
 ---
 
 ## 📖 Project Description
 
-**Cloud Janitor** is a fully serverless AWS automation tool designed to identify
-**orphaned EBS volumes** (volumes in `available` state), estimate their
-**monthly storage cost**, and deliver a consolidated report to **Discord**.
+**Cloud Janitor** is a fully serverless AWS automation tool designed to identify **orphaned EBS volumes** (volumes in `available` state), estimate their **monthly storage cost**, and deliver a consolidated report to **Discord**.
 
-The solution is provisioned entirely using **Terraform (IaC)** and runs on a
-**daily schedule** via **EventBridge Scheduler**, requiring no servers,
-no manual execution, and minimal operational overhead.
+Unlike traditional Lambda deployments, this project is **containerized using Docker**. The infrastructure and the container build process are fully managed by **Terraform**, ensuring a consistent runtime environment and eliminating dependency issues.
 
 ### Key Features & Skills Demonstrated
-- ✅ **Infrastructure as Code:** Full lifecycle management with Terraform
-- ✅ **Serverless Architecture:** AWS Lambda & EventBridge for zero-maintenance compute
-- ✅ **FinOps Mindset:** Automated cost estimation and cost visibility
-- ✅ **Multi-Region Support:** Scans orphaned resources across multiple AWS regions
-- ✅ **Least Privilege Security:** Granular IAM roles and policies
+
+- ✅ **Infrastructure as Code:** Full lifecycle management with Terraform  
+- ✅ **Containerized Lambda:** Packaged as a Docker image (ECR) for consistent execution  
+- ✅ **Automated Build Pipeline:** Terraform builds & pushes the image to ECR automatically  
+- ✅ **FinOps Mindset:** Automated cost estimation and visibility  
+- ✅ **Multi-Region Support:** Scans orphaned resources across multiple AWS regions  
+- ✅ **Least Privilege Security:** Granular IAM roles and policies  
 
 ---
 
 ## ⚙️ High-Level Flow
 
-1. **Terraform** provisions all infrastructure (IAM, Lambda, Scheduler)
-2. **EventBridge Scheduler** triggers the Lambda function daily at **09:00 (Europe/Istanbul)**
-3. **AWS Lambda**:
-   - Reads target regions from environment variables
+1. **Terraform** provisions the ECR repository and IAM roles.
+2. **Terraform (local-exec)** builds the Docker image locally and pushes it to **Amazon ECR**.
+3. **Terraform** deploys the **AWS Lambda** function using the image from ECR.
+4. **EventBridge Scheduler** triggers the Lambda container daily at **09:00 (Europe/Istanbul)**.
+5. **AWS Lambda**:
    - Queries EC2 APIs for orphaned EBS volumes using `boto3`
    - Estimates monthly storage cost based on volume type and size
    - Aggregates results into a structured report
-4. **Discord Webhook** receives the formatted inventory and cost report
-5. **CloudWatch Logs** capture execution details for observability
+6. **Discord Webhook** receives the formatted inventory and cost report.
 
 ---
 
 ## 🏗 Architecture Components
 
 | Component | Description |
-|---------|-------------|
-| **AWS Lambda** | Python 3.12 runtime, stateless execution, multi-region EBS scanning |
+|---|---|
+| **AWS Lambda** | Runs as a Docker Container (Python 3.11), stateless execution |
+| **Amazon ECR** | Stores the Docker container image securely |
 | **EventBridge Scheduler** | Cron-based, timezone-aware scheduler |
 | **IAM** | Least-privilege roles; read-only EC2 access and log write permissions |
-| **Terraform** | Declarative infrastructure provisioning and state management |
+| **Terraform** | Manages infrastructure, ECR repos, and Docker build/push automation |
 
 ---
 
 ## 🛠 Prerequisites
 
-Before deploying, ensure you have:
+Before deploying, ensure you have the following installed and configured:
 
-- [AWS CLI](https://aws.amazon.com/cli/) (configured with credentials)
-- [Terraform](https://www.terraform.io/downloads) (v1.5+ recommended)
+- **AWS CLI** (configured via `aws configure`)
+- **Terraform** (v1.5+ recommended)
+- **Docker Desktop** (must be running for image building)
 - A **Discord Webhook URL**
+- AWS credentials with permissions to create ECR, Lambda, IAM, EventBridge Scheduler, and CloudWatch Logs resources
 
 ---
 
 ## 🚀 Deployment Guide
 
-### 1. Clone the Repository
+### 1) Clone the Repository
+
 ```bash
-git clone https://github.com/emredogan-cloud/aws-cloud-janitor.git
-cd aws-cloud-janitor
+git clone https://github.com/emredogan-cloud/cloud-janitor-ebs-scan.git
+cd cloud-janitor-ebs-scan
+```
 
-2. Configure Secrets
+### 2) Configure Secrets
 
-⚠️ Security Note: Never commit secrets to version control.
+⚠️ **Security note:** Never commit secrets to version control.
 
-Create a local terraform.tfvars file (this file is git-ignored):
+Create a `terraform.tfvars` file inside the `terraform/` directory:
+
+```hcl
+# terraform/terraform.tfvars
 lambda_vars = {
   DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/YOUR_WEBHOOK_HERE"
   REGIONS             = "us-east-1,eu-central-1"
 }
+```
 
-3. Initialize & Deploy
+> Tip: Add `terraform/terraform.tfvars` to your `.gitignore` if it isn’t already ignored.
+
+### 3) Initialize & Deploy
+
+Switch to the `terraform/` directory and apply the configuration (ensure Docker is running):
+
+```bash
+cd terraform
 terraform init
 terraform plan
 terraform apply
+```
 
-Type yes when prompted.
+Type `yes` when prompted. Terraform will automatically build the Docker image, push it to ECR, and deploy the Lambda function.
 
-🧪 Manual Test (Optional)
+---
 
-You don’t have to wait for the scheduled time.
-The Lambda function can be manually invoked via the AWS Console or CLI
-to verify Discord notifications.
+## 🧪 Manual Test (Optional)
 
-👨‍💻 Author
+You don’t have to wait for the scheduled time. You can manually invoke the Lambda function to verify Discord notifications:
 
-Emre Doğan
+- **AWS Console:** Lambda → your function → *Test*
+- **AWS CLI:**
+  ```bash
+  aws lambda invoke --function-name <YOUR_FUNCTION_NAME> out.json
+  cat out.json
+  ```
+
+---
+
+## 🧹 Cleanup (Optional)
+
+To remove all provisioned resources:
+
+```bash
+cd terraform
+terraform destroy
+```
+
+---
+
+## 👨‍💻 Author
+
+**Emre Doğan**  
 Aspiring AWS Solutions Architect
 
-GitHub: https://github.com/emredogan-cloud
-
-LinkedIn: https://www.linkedin.com/in/emre-do%C4%9Fan-657a99388/
+- GitHub: **emredogan-cloud**
+- LinkedIn: **Emre Doğan**
