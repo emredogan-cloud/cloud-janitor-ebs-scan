@@ -13,7 +13,7 @@ EBS_PRICES = {
     "io1": 0.125,
     "io2": 0.125,
     "st1": 0.045,
-    "sc1": 0.025
+    "sc1": 0.025,
 }
 
 
@@ -27,9 +27,10 @@ def estimate_monthly_cost(volume):
 
 def send_to_discord(message: str):
     webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
-    if not webhook_url: return
+    if not webhook_url:
+        return
 
-    chunks = [message[i:i+1900] for i in range(0, len(message), 1900)]
+    chunks = [message[i : i + 1900] for i in range(0, len(message), 1900)]
 
     for chunk in chunks:
         payload = {"content": chunk, "username": "Cloud Janitor"}
@@ -37,7 +38,7 @@ def send_to_discord(message: str):
             "POST",
             webhook_url,
             body=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
         )
 
         if response.status >= 300:
@@ -49,12 +50,14 @@ def get_regions():
 
     if regions_env.upper() == "ALL":
         try:
-            ec2_client = boto3.client('ec2', region_name='us-east-1')
+            ec2_client = boto3.client("ec2", region_name="us-east-1")
             response = ec2_client.describe_regions()
-            
-            return [r['RegionName'] for r in response['Regions']]
+
+            return [r["RegionName"] for r in response["Regions"]]
         except Exception as e:
-            print(f"The region list could not be retrieved; the default us-east-1 is being used.: {e}")
+            print(
+                f"The region list could not be retrieved; the default us-east-1 is being used.: {e}"
+            )
             return ["us-east-1"]
 
     return [r.strip() for r in regions_env.split(",") if r.strip()]
@@ -88,7 +91,7 @@ def lambda_handler(event, context):
         lines = [
             " **Cloud Janitor Report: Unclaimed EBS Volumes detected.!** ",
             f"Number of regions scanned: **{len(regions)}**",
-            f"Total number of disks: **{len(all_orphan_volumes)}**\n"
+            f"Total number of disks: **{len(all_orphan_volumes)}**\n",
         ]
 
         for vol in all_orphan_volumes:
@@ -113,7 +116,7 @@ def lambda_handler(event, context):
         return {
             "status": "orphan_volumes_found",
             "count": len(all_orphan_volumes),
-            "estimated_monthly_cost": round(total_monthly_cost, 2)
+            "estimated_monthly_cost": round(total_monthly_cost, 2),
         }
 
     except ClientError as e:
