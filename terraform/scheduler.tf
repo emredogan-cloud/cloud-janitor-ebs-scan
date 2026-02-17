@@ -49,8 +49,9 @@ resource "aws_scheduler_schedule" "daily_scan" {
     input    = "{}"
   }
 
-  depends_on = [aws_iam_role_policy_attachment.scheduler_attach]
 
+  depends_on = [aws_iam_role_policy_attachment.scheduler_attach]
+}
 resource "aws_lambda_permission" "allow_scheduler" {
   statement_id  = "AllowEventBridgeSchedulerInvoke"
   action        = "lambda:InvokeFunction"
